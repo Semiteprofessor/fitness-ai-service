@@ -1,6 +1,9 @@
 package com.fitness.aiservice.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fitness.aiservice.model.Activity;
+import com.fitness.aiservice.model.Recommendation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,7 +19,57 @@ public class ActivityAIService {
         String prompt = createPromptForActivity(activity);
         String aiResponse = geminiService.getAnswer(prompt);
         log.info("RESPONSE FROM AI: {}", aiResponse);
+        processAiResponse(activity, aiResponse);
         return aiResponse;
+    }
+
+    private Recommendation processAiResponse(Activity activity, String aiResponse) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode rootNode = mapper.readTree(aiResponse);
+
+            // Navigate to: candidates[0].content.parts[0].text
+            JsonNode textNode = rootNode
+                    .path("candidates")
+                    .get(0)
+                    .path("content")
+                    .path("parts")
+                    .get(0)
+                    .path("text");
+
+            String aiText = textNode.asText();
+
+            log.info("Extracted AI Text: {}", aiText);
+
+            // OPTIONAL: If AI returns JSON string, parse it again
+            JsonNode structuredJson = mapper.readTree(aiText);
+
+            Recommendation recommendation = new Recommendation();
+            recommendation.setActivityId(activity.getId());
+
+            // Example mappings (adjust based on your Recommendation model)
+            recommendation.setOverallAnalysis(
+                    structuredJson.path("analysis").path("overall").asText()
+            );
+
+            recommendation.setPaceAnalysis(
+                    structuredJson.path("analysis").path("pace").asText()
+            );
+
+            recommendation.setHeartRateAnalysis(
+                    structuredJson.path("analysis").path("heartRate").asText()
+            );
+
+            recommendation.setCaloriesAnalysis(
+                    structuredJson.path("analysis").path("caloriesBurned").asText()
+            );
+
+            return recommendation;
+
+        } catch (Exception e) {
+            log.error("Error processing AI response", e);
+            return null;
+        }
     }
 
     private String createPromptForActivity(Activity activity) {
