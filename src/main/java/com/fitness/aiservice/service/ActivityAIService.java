@@ -48,7 +48,17 @@ public class ActivityAIService {
                       "area": "Area name",
                       "recommendation": "Detailed recommendation"
                     }
-                  ]
+                  ],
+                  "suggestions": [
+                    {
+                        "workout": "Workout name",
+                        "description": "Detailed workout description",
+                    }
+                  ],
+                  "safety": [
+                   "Safety point 1",
+                   "Safety point 2",
+                  ],
                 }
                 """,
                 activity.getType(),
